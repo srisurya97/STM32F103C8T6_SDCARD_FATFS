@@ -15,8 +15,8 @@ typedef struct
 		uint32_t BPB_TotSec16;
 		uint8_t BPB_Media;
 		uint16_t BPB_FATSz16;
-		uint16_t BPB_SecPerTrk;
-		uint16_t BPB_NumHeads;
+		//uint16_t BPB_SecPerTrk;
+		//uint16_t BPB_NumHeads;
 		uint32_t BPB_HiddSec;
 		uint32_t BPB_TotSec32;
 	}BootSectorFatCommon;
@@ -24,7 +24,7 @@ typedef struct
 typedef struct 
 	{	
 		uint8_t BS_DrvNum; //Specific for Fat12_16 from here.
-		uint8_t BS_Reserved1;
+		//uint8_t BS_Reserved1;
 		uint8_t BS_BootSig;
 		uint32_t BS_VolID;
 		uint8_t BS_VolLab[11];
@@ -46,7 +46,7 @@ typedef struct
 		uint64_t BPB_Reserved_1;
 		uint32_t BPB_Reserved_2;
 		uint8_t BS_DrvNum;
-		uint8_t BS_Reserved1;
+		//uint8_t BS_Reserved1;
 		uint8_t BS_BootSig;
 		uint32_t BS_VolID;
 		uint8_t BS_VolLab[11];
@@ -56,9 +56,9 @@ typedef struct
 typedef struct
 	{
 		uint8_t BootableFlag;
-		uint32_t CHSAddressStart;
+		//uint32_t CHSAddressStart;
 		uint8_t  PartitionType;
-		uint32_t CHSAddressEnding;
+		//uint32_t CHSAddressEnding;
 		uint32_t LBAStart;
 		uint32_t Size;
 		uint16_t Signature;
@@ -79,8 +79,7 @@ typedef struct
 		uint16_t LastModDate;
 		uint16_t FFStartCLus_Low;
 		uint32_t FileSize;
-		//uint8_t Dirname[8];
-		//uint32_t FileLocation;
+		uint16_t PreviousDir;
 	}DirStruct;
 
 	
@@ -105,6 +104,8 @@ typedef struct
 #define ARCHIVE  0x20
 #define LONGNAME 0x0F
 
+#define ROOTDIR 0x00
+#define SUBDIR 0x01
 	
 extern uint64_t LBSBaseAddress;	
 //extern READMBR MBRStruct;
