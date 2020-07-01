@@ -74,12 +74,13 @@ typedef struct
 		uint16_t CreateTime_HMS;
 		uint16_t CreateDate;
 		uint16_t LastAccessDate;
-		uint16_t FFStartCLus_High;
+		//uint16_t FFStartCLus_High;
 		uint16_t LastModTime;
 		uint16_t LastModDate;
 		uint16_t FFStartCLus_Low;
 		uint32_t FileSize;
 		uint16_t PreviousDir;
+		uint32_t StartClus;
 	}DirStruct;
 
 	
@@ -106,6 +107,8 @@ typedef struct
 
 #define ROOTDIR 0x00
 #define SUBDIR 0x01
+#define PREDIR 0x01
+#define CURDIR 0x00
 	
 extern uint64_t LBSBaseAddress;	
 //extern READMBR MBRStruct;
@@ -118,7 +121,7 @@ void SDDisplayonLCD(uint8_t *address,uint8_t M_BL);
 void SDDisplayRaw(uint8_t *address,uint8_t M_BL);
 void SDFATGetInfo(void);
 void SDFatDisplayInfo(void);
-void SDlocateRootDir (void);
+void SDlocateDir (void);
 void SDMBRRead(void);
 
 
