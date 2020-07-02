@@ -77,7 +77,7 @@ typedef struct
 		//uint16_t FFStartCLus_High;
 		uint16_t LastModTime;
 		uint16_t LastModDate;
-		uint16_t FFStartCLus_Low;
+		//uint16_t FFStartCLus_Low;
 		uint32_t FileSize;
 		uint16_t PreviousDir;
 		uint32_t StartClus;
