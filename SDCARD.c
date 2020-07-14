@@ -51,9 +51,8 @@ void SPI2init (void)
 		GPIOB->CRH |= GPIO_CRH_MODE12; //OUTPUT 50MHZ
 		GPIOB->CRH &= ~GPIO_CRH_CNF12; //GENERAL PURPOSE OUTPUT
 
-		SPI2->CR1 |= SPI_CR1_SSM | SPI_CR1_SSI | SPI_CR1_MSTR ;
 		SPI2->CR2 |= SPI_CR2_TXEIE | SPI_CR2_RXNEIE;
-		SPI2->CR1 |= SPI_CR1_SPE;
+		SPI2->CR1 |= SPI_CR1_SSM | SPI_CR1_SSI | SPI_CR1_MSTR  | SPI_CR1_SPE;
 
 		SDCARD_CS(1);
 	}
@@ -252,6 +251,7 @@ uint8_t SDdataresponsetoken(uint8_t returndata) //Used in for writting data
 {
 	if((0x0F & returndata)== 0b00000101)
 	{
+		//LCD_ShowxNum(100,300,returndata,3,16,1);
 		LCD_ShowString(180,300,60,12,12,"Done");
 		return 0;
 		
@@ -359,11 +359,11 @@ uint8_t SDStatusR1(uint8_t returndata)
 }
 
 
-void SDWritedata2b (uint16_t *data,uint8_t *address,uint16_t DataCRC)
+uint16_t SDWritedata2b (uint8_t data[],uint8_t *address,uint16_t DataCRC)
 {
+	uint16_t x = 0;
 	uint8_t returndata;
 	SDCARD_CS(0);
-	SDCARDWrite(0x58);	//CMD24
 	returndata = SDCMD(24,(uint32_t)address,0xFF);
 	
 	while(returndata==0xFF)
@@ -373,24 +373,30 @@ void SDWritedata2b (uint16_t *data,uint8_t *address,uint16_t DataCRC)
 	if(SDStatusR1(returndata) == NOERROR )
 		{
 			returndata=SDCARDWrite(0xFE); //Data Start Byte
-			returndata=SDCARDWrite((uint8_t)data>>8);	
-			returndata=SDCARDWrite((uint8_t)data);
-			
+			for(x = 0 ; data[x] != 0x00; x++){
+				returndata=SDCARDWrite(data[x]);
+			}
+			for(uint16_t y = 0 ; y < 512 - x ; y++){
+				returndata=SDCARDWrite(0x00);
+			}
+			/*
 			SDCARDWrite((uint8_t)DataCRC>>8); //CRC
 			returndata=SDCARDWrite((uint8_t)DataCRC);	
-			
-			while(SDCARDWrite(0xFF) == 0xFF);
-			
-			LCD_ShowString(50,150,20,16,16,"Z");
-			
-			SDdataresponsetoken(returndata);	
-				
+			*/
+			while(returndata == 0xFF)
+				{
+					returndata = SDCARDWrite(0xFF);
+				}
+			SDdataresponsetoken(returndata);		
+			while(SDCARDWrite(0xFF) != 0xFF);				
 		}
 		else 
 			{
 				LCD_ShowString(180,300,60,12,12,"Busy");
 			}
 	SDCARD_CS(1);
+			
+		return x;
 }
 
 
@@ -441,10 +447,7 @@ uint16_t SDCardBegin (void)
 		//SPI2init();
 		
 		SDCARD_CS(1);
-		for(i=0;i<12;i++)
-			{
-				SDCARDWrite(0xFF);
-			}
+		for(i=0;i<12;i++){ SDCARDWrite(0xFF);	}
 			
 		SDCARD_CS(0);		
 			

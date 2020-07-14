@@ -500,17 +500,18 @@ DirStruct SDRecordEntries (void)
 }
 
 
-#define FileLocation  RootDirAddress + (FatCommon.BPB_RootEntCnt*32 ) + ((File->StartClus - 2) * FatCommon.BPB_SecPerClus * FatCommon.BPB_BytsPerSec)
+//#define FileLocation  RootDirAddress + (FatCommon.BPB_RootEntCnt*32 ) + ((File->StartClus - 2) * FatCommon.BPB_SecPerClus * FatCommon.BPB_BytsPerSec)
 
 void OpenAsTXTFile ( DirStruct *File)
 {
 	SDCARD_CS(0);
+	
 	uint16_t u=0,v=0;
 	uint8_t returndata=0;
-	uint32_t Sizecount=0;//, FileLocation;
+	uint32_t Sizecount=0, FileLocation;
 	
 	if(MBRStruct.PartitionType == FAT_32_LBA || MBRStruct.PartitionType == FAT_32_CHS){FatCommon.BPB_BytsPerSec = 1;}
-	//FileLocation = RootDirAddress + (FatCommon.BPB_RootEntCnt * 32 ) + ((File->StartClus - 2) * FatCommon.BPB_SecPerClus * FatCommon.BPB_BytsPerSec);
+	FileLocation = RootDirAddress + (FatCommon.BPB_RootEntCnt * 32 ) + ((File->StartClus - 2) * FatCommon.BPB_SecPerClus * FatCommon.BPB_BytsPerSec);
 			
 	if( SDreaddata2b((uint8_t *)FileLocation,File->FileSize*0.00195) == READY)
 		{ 
@@ -689,15 +690,32 @@ void OpenEntry (DirStruct *OpenEntryPtr, uint8_t EntryNumber)
 		OpenAsTXTFile(&OpenEntryPtr[EntryNumber]);}
 }
 
+void writetoexistingfile ( DirStruct * TempFolder, uint8_t *Data)
+{
+	uint16_t newsize;
+	uint32_t FileLocation;
+	if(MBRStruct.PartitionType == FAT_32_LBA || MBRStruct.PartitionType == FAT_32_CHS){FatCommon.BPB_BytsPerSec = 1;}
+	FileLocation = RootDirAddress + (FatCommon.BPB_RootEntCnt * 32 ) + ((TempFolder->StartClus - 2) * FatCommon.BPB_SecPerClus * FatCommon.BPB_BytsPerSec);
+	newsize = SDWritedata2b( Data, (uint8_t *)FileLocation,0xFFFF);
+	LCD_ShowxNum(50,150,newsize,5,16,1);
+	//SDWritedata2b(newsize,TempFolder->FileSize,0xFF);
+}
+
+
 
 void SDlocateDir (void)
 {
 	DirStruct *FolderPtr;
-
-	FolderPtr = LoadDirEntries((uint8_t *)RootDirAddress);
-	DisplayDir(FolderPtr);				
 	
-	OpenEntry(FolderPtr,1);
+	FolderPtr = LoadDirEntries((uint8_t *)RootDirAddress);
+	DisplayDir(FolderPtr);		
+	
+	writetoexistingfile(&FolderPtr[1],"PLANET EARTH.");
+	
+	
+  OpenEntry(FolderPtr,1);
 	
 	free(FolderPtr);
+	FolderPtr = NULL;
+	
 }
