@@ -22,7 +22,11 @@ typedef struct
 	uint8_t MID;
 	uint8_t *MIDName;
 	uint8_t Debug;
+	uint8_t mount;
 }sdcardinfo;
+
+extern sdcardinfo sdcard1info;
+
 
 #define CARDREADY 0x00
 #define CARDIDLE 0x01
@@ -38,7 +42,7 @@ void SDcheckstatus (void);
 uint8_t SDStatusR1(uint8_t returndata);
 uint8_t SDCARDWrite(uint8_t sddata);
 uint8_t SDreaddata2b (uint8_t *address,uint8_t sorm);
-void SDWritedata2b (uint16_t *data,uint8_t *address,uint16_t DataCRC);
+uint16_t SDWritedata2b (uint8_t data[],uint8_t *address,uint16_t DataCRC);
 uint8_t SDStatusR1(uint8_t returndata);
 void SDStopReadTransmit (void);
 

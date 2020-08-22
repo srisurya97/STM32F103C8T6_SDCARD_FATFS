@@ -5,6 +5,7 @@
 #include "delay.h"
 
 
+
 BootSectorFatCommon FatCommon;
 BootSectorFat12_16 Fat16;	
 BootSectorFat32 Fat32;
@@ -15,7 +16,7 @@ uint64_t RootDirAddress;
 
 uint16_t SizeCount = 0;
 
-void SDMBRRead (void)
+uint8_t SDMBRRead (void)
 {
 	uint32_t tempdata=0;
 	uint8_t returndata=0;
@@ -36,6 +37,7 @@ void SDMBRRead (void)
 					retry = 0;
 					LCD_Clear(BLACK);
 					LCD_ShowString(2,120,240,16,16,(uint8_t *)"Something Wrong With SDCard!");
+					return 0;
 				}
 				else
 					{	
@@ -101,16 +103,18 @@ void SDMBRRead (void)
 					}
 		}					
 	SDCARD_CS(1);
+	return 1;	
 	
 }
 
 
-void SDFATGetInfo(void)
+uint8_t SDFATGetInfo(void)
 {
 	uint16_t tempcode=0;
 	uint8_t returndata=0,i=0;
 	
-	//SDMBRRead();
+	if(SDMBRRead() == 1){
+	
 	SDCARD_CS(0);
 	for( ;i<16; i++){SDCARDWrite(0xFF);}
 	if(SDreaddata2b((uint8_t *)LBSBaseAddress,SINGLEBLOCK) == READY)
@@ -271,7 +275,9 @@ void SDFATGetInfo(void)
 			else if(MBRStruct.PartitionType == FAT_32_CHS || MBRStruct.PartitionType == FAT_32_LBA){
 					RootDirAddress= LBSBaseAddress+ (Fat32.BPB_FATSz32*FatCommon.BPB_NumFATs)+FatCommon.BPB_RsvdSecCnt ;
 					}else{ LCD_ShowString(2,2,240,16,16,(uint8_t *)"Unsupported FileSystem."); }	
-
+		return 1;	
+		}else{
+	return 0;}
 }
 
 
@@ -506,7 +512,7 @@ void OpenAsTXTFile ( DirStruct *File)
 {
 	SDCARD_CS(0);
 	
-	uint16_t u=0,v=0;
+	uint16_t u=0,v=25;
 	uint8_t returndata=0;
 	uint32_t Sizecount=0, FileLocation;
 	
@@ -517,8 +523,9 @@ void OpenAsTXTFile ( DirStruct *File)
 		{ 
 			while(SDCARDWrite(0xFF) != 0xFE);
 			returndata = SDCARDWrite(0xFF);
-			LCD_Clear(BLACK);
-			while(Sizecount < File->FileSize)
+			LCD_Clear(BLACK);		
+			//while(Sizecount < File->FileSize)
+			while(returndata != 0x00)
 				{
 					Sizecount ++;
 					if(returndata == 9){returndata = SDCARDWrite(0xFF); u = u + 14; } //Tab Space
@@ -557,13 +564,14 @@ void OpenAsTXTFile ( DirStruct *File)
 								if(File->FileSize*0.00195 != SINGLEBLOCK)
 									{ 
 										delay_ms(5000);
-										v = 0;
+										v = 25;
 										LCD_Clear(BLACK); 
 									}
 									else { break; }
 							}
 					}
-				}
+			}
+				
 		if(File->FileSize*0.00195 != SINGLEBLOCK)
 			{			
 				SDCMD(12,0x00000000,0xFF);
@@ -571,8 +579,8 @@ void OpenAsTXTFile ( DirStruct *File)
 			}
 		for(uint16_t i = 0; i< 512; i++){SDCARDWrite(0xFF);}
 	}
-		LCD_ShowString(2,300,240,16,16,"File Size:           Bytes.");
-		LCD_ShowxNum(84,300,Sizecount,10,16,1);
+		LCD_ShowString(2,lcddev.height - 18,240,16,16,"File Size:           Bytes.");
+		LCD_ShowxNum(84,lcddev.height - 18,Sizecount,10,16,1);
 	SDCARD_CS(1);
 }
 
@@ -581,12 +589,13 @@ void DisplayDir (DirStruct *TempFile)
 	DirStruct *File2;
 	uint16_t FileNumber = 40;
 	LCD_Clear(BLACK);
+	//subwindowframe(" ");
 	LCD_ShowString(1,1,240,16,16,(uint8_t *)"./"); 
 	if(TempFile[0].FileAttributes == DIRECTORY){ LCD_ShowString(20,1,240,16,16,TempFile[0].DOSFilename); }		
 	LCD_ShowString(1,20,240,16,16,(uint8_t *)"No  Name    Ext     Size  Clus");
-	for(uint8_t i = 1 ; ;i++)
+	for(uint8_t i = 1 ; i < SizeCount ;i++)
 				{
-					if(TempFile[i].FileAttributes == 0x00){break;}
+					//if(TempFile[i].FileAttributes == 0x00){break;}
 					if(TempFile[i].FileAttributes == DIRECTORY){TempFile[i].DOSFileExtension[0] = 'D', 
 																											TempFile[i].DOSFileExtension[1] = 'I',
 																											TempFile[i].DOSFileExtension[2] = 'R'; }
@@ -599,7 +608,7 @@ void DisplayDir (DirStruct *TempFile)
 					LCD_ShowxNum(200,FileNumber,File2->StartClus,5,12,1);
 					
 					FileNumber = FileNumber + 12;
-					if(FileNumber >= 300){LCD_ShowString(20,FileNumber,150,12,12,(uint8_t *)"& More File/Folders."); break;}																							
+					if(FileNumber >= ((lcddev.height) - 20)){LCD_ShowString(20,FileNumber,150,12,12,(uint8_t *)"& More File/Folders."); break;}																							
 				  //if(FileNumber >= 300){FileNumber = 40; LCD_Clear(BLACK); LCD_ShowString(1,20,240,16,16,(uint8_t *)"No  Name    Ext     Size  Clus");}																									
 				}
 }
@@ -660,14 +669,12 @@ DirStruct* LoadSUBDirEntries (DirStruct *TempFolder,uint8_t DirectoryNumber)
 	uint8_t DirName[8];
 	for(uint8_t x=0;x<8;x++){	DirName[x] = TempDirectory->DOSFilename[x];}
 	
-	if(TempDirectory->StartClus == 0)
-			{
-				RootClus = RootDirAddress; 
-			}
-			else
-				{	
-					RootClus = RootDirAddress + (FatCommon.BPB_RootEntCnt*32 ) + ((TempDirectory->StartClus - 2) * FatCommon.BPB_SecPerClus * FatCommon.BPB_BytsPerSec);
-				}
+	if(TempDirectory -> StartClus == 0){
+		RootClus = RootDirAddress;
+	}
+	else{
+	RootClus = RootDirAddress + (FatCommon.BPB_RootEntCnt*32 ) + ((TempDirectory->StartClus - 2) * FatCommon.BPB_SecPerClus * FatCommon.BPB_BytsPerSec);
+	}
 	free(TempFolder);		
 	TempFolder = NULL;
 					 
@@ -692,30 +699,26 @@ void OpenEntry (DirStruct *OpenEntryPtr, uint8_t EntryNumber)
 
 void writetoexistingfile ( DirStruct * TempFolder, uint8_t *Data)
 {
-	uint16_t newsize;
+	//uint16_t newsize;
 	uint32_t FileLocation;
 	if(MBRStruct.PartitionType == FAT_32_LBA || MBRStruct.PartitionType == FAT_32_CHS){FatCommon.BPB_BytsPerSec = 1;}
 	FileLocation = RootDirAddress + (FatCommon.BPB_RootEntCnt * 32 ) + ((TempFolder->StartClus - 2) * FatCommon.BPB_SecPerClus * FatCommon.BPB_BytsPerSec);
-	newsize = SDWritedata2b( Data, (uint8_t *)FileLocation,0xFFFF);
-	LCD_ShowxNum(50,150,newsize,5,16,1);
-	//SDWritedata2b(newsize,TempFolder->FileSize,0xFF);
+	SDWritedata2b( Data, (uint8_t *)(FileLocation),0xFFFF);
 }
 
+DirStruct *FolderPtr;
 
-
-void SDlocateDir (void)
+void SDlocateDir (uint8_t Entry)
 {
-	DirStruct *FolderPtr;
-	
-	FolderPtr = LoadDirEntries((uint8_t *)RootDirAddress);
+	//static DirStruct *FolderPtr = NULL;
+	if(Entry == 100){
+	FolderPtr = LoadDirEntries((uint8_t *)RootDirAddress);		
 	DisplayDir(FolderPtr);		
+	}else{
+		OpenEntry(FolderPtr,Entry);
+	}
 	
-	writetoexistingfile(&FolderPtr[1],"PLANET EARTH.");
-	
-	
-  OpenEntry(FolderPtr,1);
-	
-	free(FolderPtr);
+	/*free(FolderPtr);
 	FolderPtr = NULL;
-	
+	*/
 }

@@ -28,17 +28,14 @@ int main()
 	LCD_ShowString(1,1,150,18,16,"SDCard Response:");
 	if(SDCardBegin() == 1)
 		{
-			SDMBRRead();
-			SDFATGetInfo();	
-			LCD_ShowString(130,1,120,16,16,"Complete");
-	
-			SDCardDisplayinfo();	
-			delay_ms(500);
-			LCD_Clear(BLACK);
-			SDFatDisplayInfo();
-			delay_ms(500);
-			LCD_Clear(BLACK);
-			SDlocateRootDir();
+			if(SDMBRRead()== 1)
+				{
+					SDFATGetInfo();	
+					LCD_ShowString(130,1,120,16,16,"Complete");
+
+
+					SDlocateDir(100);
+				}
 		}
 		
 }

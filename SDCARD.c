@@ -12,6 +12,7 @@ sdcardinfo sdcard1info;
 uint64_t CID1, CID2;
 uint64_t CSD1, CSD2;
 
+
 void SDCARD_CS (uint8_t sdcs)
 	{
 		if(sdcs==1)
@@ -441,6 +442,8 @@ void SDStopReadTransmit (void)
 
 uint16_t SDCardBegin (void)
 	{
+		SPI2init();
+		
 		uint16_t i=0;
 		uint8_t returndata=0,retry=0;
 		sdcard1info.Debug = 0;
@@ -461,8 +464,13 @@ uint16_t SDCardBegin (void)
 			
 		if(retry == 5)
 			{
-				LCD_ShowString(130,1,85,40,16,"SDCard Not Found!");	
-			}	
+				POINT_COLOR = WHITE;
+				LCD_ShowString(150,300,85,40,12,"SDCard Not Found!");	
+				delay_ms(200);
+				POINT_COLOR = BLACK;
+				LCD_ShowString(150,300,85,40,12,"SDCard Not Found!");	
+				POINT_COLOR = WHITE;
+			}			
 			else
 				{
 					retry = 0;	
@@ -612,8 +620,9 @@ uint16_t SDCardBegin (void)
 							{
 								LCD_ShowString(200,160,50,16,16,"CMD16");	
 							}
-						//SDFATGetInfo();		
-						return 1;
+						if(SDFATGetInfo() == 1){
+						return 1;}
+						return 0;
 				}
 }
 
